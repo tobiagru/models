@@ -41,6 +41,20 @@ flags.DEFINE_integer('sample_1_of_n_eval_on_train_examples', 5, 'Will sample '
                      'one of every n train input examples for evaluation, '
                      'where n is provided. This is only used if '
                      '`eval_training_data` is True.')
+flags.DEFINE_integer('save_checkpoints_steps', 2000, 'After how many steps to '
+                     'run an evaluation and save the results, This is useful '
+                     'for debugging to check evaluations early and often.')
+flags.DEFINE_integer('save_checkpoints_secs', None, 'After how many secs to '
+                     'run an evaluation and save the results, This is useful '
+                     'for debugging to check evaluations early and often.')
+flags.DEFINE_integer('throttle_secs', 600, 'How many seconds training has '
+                     'has to run at least before a new eval run is done, '
+                     'Stops the model from evaluating to often, useful for '
+                     'low save_checkpoints_steps')
+flags.DEFINE_boolean('log_device_placement', False, 'Log on which device '
+                     'each variable is logged. Useful for debugging if '
+                     'variables are computed on GPU/TPU properly and to '
+                     'find performance bottlenecks.')
 flags.DEFINE_string(
     'hparams_overrides', None, 'Hyperparameter overrides, '
     'represented as a string containing comma-separated '
@@ -59,7 +73,11 @@ FLAGS = flags.FLAGS
 def main(unused_argv):
   flags.mark_flag_as_required('model_dir')
   flags.mark_flag_as_required('pipeline_config_path')
-  config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir)
+  config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir,
+      session_config=tf.ConfigProto(
+          log_device_placement=FLAGS.log_device_placement),
+      save_checkpoints_steps = FLAGS.save_checkpoints_steps,
+      save_checkpoints_secs = FLAGS.save_checkpoints_secs)
 
   train_and_eval_dict = model_lib.create_estimator_and_inputs(
       run_config=config,
